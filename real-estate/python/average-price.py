@@ -1,54 +1,44 @@
-import requests
 import json
 import os
 
-json_url = 'https://raw.githubusercontent.com/bogdanfazakas/datasets/refs/heads/main/data.json'
-output_folder = '/data/outputs'
-output_file = os.path.join(output_folder, 'results.json')
+input_file = 'data.json'
+output_folder = 'data/outputs'
+output_file = os.path.join(output_folder, 'flat_properties.json')
 
-def compute_avg_price_by_rooms(url):
+def flatten_properties(input_path):
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        properties = response.json()
+        with open(input_path, 'r', encoding='utf-8') as f:
+            properties = json.load(f)
 
-        if not isinstance(properties, list):
-            raise ValueError("Expected JSON to be a list")
-
-        avg_prices_by_rooms = {}
-
+        flat_list = []
         for prop in properties:
             info = prop.get("info", {})
-            price = info.get("price")
-            rooms_no = info.get("roomsNo")
+            flat = {
+                "id": prop.get("id"),
+                "price": info.get("price"),
+                "zone": info.get("zone"),
+                "roomsNo": info.get("roomsNo"),
+                "surface": info.get("surface"),
+                "bathroomsNo": info.get("bathroomsNo"),
+                "type": info.get("type"),
+                "createdOn": info.get("createdOn"),
+                "ccy": info.get("ccy"),
+                "url": info.get("url"),
+                "active": prop.get("active"),
+                "created_datetime": prop.get("created_datetime"),
+                "updated_datetime": prop.get("updated_datetime"),
+            }
+            flat_list.append(flat)
 
-            if price is None or rooms_no is None:
-                continue
-
-            if rooms_no not in avg_prices_by_rooms:
-                avg_prices_by_rooms[rooms_no] = {
-                    "totalPrice": 0,
-                    "count": 0
-                }
-
-            avg_prices_by_rooms[rooms_no]["totalPrice"] += price
-            avg_prices_by_rooms[rooms_no]["count"] += 1
-
-        # Finalize average calculation
-        for rooms_no, stats in avg_prices_by_rooms.items():
-            avg = stats["totalPrice"] / stats["count"]
-            avg_prices_by_rooms[rooms_no]["averagePrice"] = round(avg, 2)
-
-        # Write to output file
         os.makedirs(output_folder, exist_ok=True)
-        with open(output_file, "w") as f:
-            json.dump(avg_prices_by_rooms, f, indent=2)
+        with open(output_file, "w", encoding='utf-8') as f:
+            json.dump(flat_list, f, indent=2, ensure_ascii=False)
 
-        print("✅ Results written to:", output_file)
-        print("📊 Avg Prices by Rooms:", avg_prices_by_rooms)
+        print("✅ Flat property data written to:", output_file)
+        print("ℹ️  Total properties:", len(flat_list))
 
     except Exception as e:
         print(f"❌ Error: {str(e)}")
 
 # Run it
-compute_avg_price_by_rooms(json_url)
+flatten_properties(input_file)
